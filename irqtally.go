@@ -16,13 +16,16 @@ type IrqCount uint64
 type IrqTally struct {
 	IrqNum       uint       `json:"IrqNum"`
 	CpuIrqCounts []IrqCount `json:"CpuIrqCounts"`
-	Source       string     `json:"SouceOfInterrupt"`
+	IrqSource    string     `json:"SouceOfInterrupt"`
 }
-type IrqTallies []IrqTally
+type IrqTallies struct {
+	CpuCount   int        `json:"TotalCpuCount"`
+	IrqCount   int        `json:"TotalIrqCount"`
+	IrqsPerCpu []IrqTally `json:"IrqsPerCpu"`
+}
 
 func FetchIrqs() (*IrqTallies, error) {
 	var irqTallies IrqTallies
-	var cpuCnt int = 0
 	buff, err := ioutil.ReadFile(pathInterrupts)
 	if err != nil {
 		errStr := "Could not read from " + pathInterrupts
@@ -30,11 +33,13 @@ func FetchIrqs() (*IrqTallies, error) {
 		return nil, errors.New(errStr)
 	}
 	lines := strings.Split(string(buff), "\n")
+	// Read each line the buffer, until we fail to convert a column 1 irq number to an int.
 	for idx, line := range lines {
 		if idx == 0 {
-			cpuCnt = len(strings.Fields(line))
+			// First line is the header, with a column header for each CPU, count them.
+			irqTallies.CpuCount = len(strings.Fields(line))
 		} else {
-			if cpuCnt < 1 {
+			if irqTallies.CpuCount < 1 {
 				errStr := "Could not detect the number of CPUs"
 				log.Println(errStr)
 				return nil, errors.New(errStr)
@@ -42,34 +47,27 @@ func FetchIrqs() (*IrqTallies, error) {
 			var irqTally IrqTally
 			splits := strings.Fields(line)
 			if _, err := fmt.Sscanf(splits[0], "%d:", &irqTally.IrqNum); err == nil {
-				for i := 1; i < (cpuCnt - 1); i++ {
+				// Parse out the numeric totals for IRQs seen per CPU.
+				for i := 1; i < (irqTallies.CpuCount - 1); i++ {
 					var irqCnt IrqCount
 					fmt.Sscanf(splits[i], "%d", &irqCnt)
 					irqTally.CpuIrqCounts = append(irqTally.CpuIrqCounts, irqCnt)
 				}
-				for i := cpuCnt; i < len(splits); i++ {
-					if len(irqTally.Source) != 0 {
-						irqTally.Source += " "
+				// Combine the strings following per CPU Irq counts into an IrqSource string
+				for i := irqTallies.CpuCount; i < len(splits); i++ {
+					if len(irqTally.IrqSource) != 0 {
+						irqTally.IrqSource += " "
 					}
-					irqTally.Source += strings.TrimSpace(splits[i])
+					irqTally.IrqSource += strings.TrimSpace(splits[i])
 				}
-				irqTallies = append(irqTallies, irqTally)
+				irqTallies.IrqsPerCpu = append(irqTallies.IrqsPerCpu, irqTally)
 			} else {
-				for _, irqTally := range irqTallies {
-					var stringOfCounts string
-					for _, irqCnt := range irqTally.CpuIrqCounts {
-						stringOfCounts += fmt.Sprintf("%d", irqCnt) + " "
-					}
-				}
+				// How many numbered IRQs did we inventory?
+				irqTallies.IrqCount = len(irqTallies.IrqsPerCpu)
+				//We've hit a non-numeric (numbered IRQ), bail out of top for/loop.
 				break
 			}
 		}
 	}
-	//out, err := json.Marshal(IrqTallies)
-	//if err != nil {
-	//	log.Println(err)
-	//	os.Exit(1)
-	//}
-	//fmt.Println(string(out))
 	return &irqTallies, nil
 }
