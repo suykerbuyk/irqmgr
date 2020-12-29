@@ -34,8 +34,8 @@ type IrqCpuAffinity struct {
 }
 type IrqsServicedTally struct {
 	NumericInterruptValue   uint       `json:"NumericInterruptValue"`
-	SourceOfHwInterrupt     string     `json:"SourceOfHwInterrupt"`
 	InterruptsServicedByCPU []IrqCount `json:"InterruptsServicedByCPU"`
+	SourceOfHwInterrupt     string     `json:"SourceOfHwInterrupt"`
 }
 type IrqTallies struct {
 	TotalCpuCount     int                 `json:"TotalCpuCount"`

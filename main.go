@@ -15,25 +15,36 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	<h2>From here you can:</h2>
 	<ul>
 	<li><a href="/all">View Every All IRQ Info</a></li>
+	<li><a href="/just">View just the IRQ Tallies</a></li>
 	</ul>`
 	fmt.Println("Endpoint Hit: homepage")
 	fmt.Fprintf(w, staticHome)
 }
-func handleRequest() {
-	fmt.Println("Entering handle request")
-	irqMgrRouter := mux.NewRouter().StrictSlash(true)
-	irqMgrRouter.HandleFunc("/", homePage)
-	irqMgrRouter.HandleFunc("/all", serveIrqTallies)
-	log.Fatal(http.ListenAndServe(":10000", irqMgrRouter))
-}
-
-func serveIrqTallies(w http.ResponseWriter, r *http.Request) {
+func serveAllIrqTallies(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Endpoint Hit: serveIrqTallies")
 	irqTallies, err := FetchIrqs()
 	if err != nil {
 		log.Fatal(err)
 	}
 	json.NewEncoder(w).Encode(irqTallies)
+}
+
+func serveJustIrqTallies(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Endpoint Hit: serveIrqTallies")
+	irqTallies, err := FetchIrqs()
+	if err != nil {
+		log.Fatal(err)
+	}
+	json.NewEncoder(w).Encode(irqTallies.IrqsServicedByCPU)
+}
+
+func handleRequest() {
+	fmt.Println("Entering handle request")
+	irqMgrRouter := mux.NewRouter().StrictSlash(true)
+	irqMgrRouter.HandleFunc("/", homePage)
+	irqMgrRouter.HandleFunc("/all", serveAllIrqTallies)
+	irqMgrRouter.HandleFunc("/just", serveJustIrqTallies)
+	log.Fatal(http.ListenAndServe(":10000", irqMgrRouter))
 }
 
 func main() {
