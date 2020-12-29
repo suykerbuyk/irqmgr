@@ -1,4 +1,4 @@
-package main
+package irqmgr
 
 import (
 	//	"encoding/json"
