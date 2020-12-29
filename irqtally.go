@@ -43,6 +43,25 @@ type IrqTallies struct {
 	IrqsServicedByCPU []IrqsServicedTally `json:"IrqsServicedByCPU"`
 }
 
+var irqTalliesPrevious *IrqTallies = nil
+var irqTalliesCurrent *IrqTallies = nil
+var irqTalliesDelta *IrqTallies = nil
+
+// Stub of what needs to be added
+func calcIrqTalliesDeltas() error {
+	if irqTalliesPrevious == nil {
+		irqTallies, err := FetchIrqs()
+		if err != nil {
+			return err
+		}
+		// Need to return an error code that indicates we don't yet have the data.
+		irqTalliesPrevious = irqTallies
+		return nil
+	}
+	// calculate the delta, update the global structs.
+	return nil
+}
+
 func FetchIrqs() (*IrqTallies, error) {
 	var irqTallies IrqTallies
 	buff, err := ioutil.ReadFile(pathInterrupts)
