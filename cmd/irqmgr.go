@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/suykerbuyk/irqmgr/irqtally.go"
 	"log"
 	"net/http"
 	//	"os"
