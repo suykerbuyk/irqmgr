@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/suykerbuyk/irqmgr/irqtally.go"
+	"github.com/suykerbuyk/irqmgr"
 	"log"
 	"net/http"
 	//	"os"
@@ -23,7 +23,7 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 func serveAllIrqTallies(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Endpoint Hit: serveIrqTallies")
-	irqTallies, err := FetchIrqs()
+	irqTallies, err := irqmgr.FetchIrqs()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,7 +32,7 @@ func serveAllIrqTallies(w http.ResponseWriter, r *http.Request) {
 
 func serveJustIrqTallies(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Endpoint Hit: serveIrqTallies")
-	irqTallies, err := FetchIrqs()
+	irqTallies, err := irqmgr.FetchIrqs()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -49,7 +49,7 @@ func handleRequest() {
 }
 
 func main() {
-	irqTallies, err := FetchIrqs()
+	irqTallies, err := irqmgr.FetchIrqs()
 	out, err := json.Marshal(irqTallies)
 	if err != nil {
 		log.Fatal(err)
