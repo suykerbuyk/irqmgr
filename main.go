@@ -18,3 +18,5 @@ func main() {
 	}
 	fmt.Println(string(out))
 }
+
+//affinity_hint  effective_affinity  effective_affinity_list  node  smp_affinity  smp_affinity_list  spurious

@@ -13,15 +13,34 @@ import (
 const pathInterrupts = "/proc/interrupts"
 
 type IrqCount uint64
-type IrqTally struct {
-	IrqNum       uint       `json:"IrqNum"`
-	CpuIrqCounts []IrqCount `json:"CpuIrqCounts"`
-	IrqSource    string     `json:"SouceOfInterrupt"`
+
+/* IrqCpuAffinity - Struct to capture CPU affinity for HW IRQs
+   see: https://github.com/torvalds/linux/blob/bebc6082da0a9f5d47a1ea2edc099bf671058bd4/include/linux/irq.h#L138
+*/
+type IrqCpuAffinity struct {
+	// Integer value of the hardware interrupt, not sequential!
+	NumericInterruptValue uint `json:"NumericInterruptValue"`
+	//This will need to become a bit mask of arbitrary length (len == core count)
+	SmpAffinity string `json:"SmpAffinity"`
+	/* This needs to be codified to reflect a (possibly) stepped range, that is portable across the wire.
+	   What would be cool is if we could find a way to imply sockets vs hardware threads. l2, and l3 are socket based  */
+	SmpAffinityList string `json:"SmpAffinityList"`
+	// Not entirely sure how this is leveraged by anything except irqbalance
+	AffinityHint string `json:"AffinityHint"`
+	/* To be researched */
+	EffectiveAffinity string `json:"EffectiveAffinity"`
+	/* To be researched */
+	EffectiveAffinityList string `json:"EffectiveAffinityList"`
+}
+type IrqsServicedTally struct {
+	NumericInterruptValue   uint       `json:"NumericInterruptValue"`
+	SourceOfHwInterrupt     string     `json:"SourceOfHwInterrupt"`
+	InterruptsServicedByCPU []IrqCount `json:"InterruptsServicedByCPU"`
 }
 type IrqTallies struct {
-	CpuCount   int        `json:"TotalCpuCount"`
-	IrqCount   int        `json:"TotalIrqCount"`
-	IrqsPerCpu []IrqTally `json:"IrqsPerCpu"`
+	TotalCpuCount     int                 `json:"TotalCpuCount"`
+	TotalNumericIRQs  int                 `json:"TotalIrqCount"`
+	IrqsServicedByCPU []IrqsServicedTally `json:"IrqsServicedByCPU"`
 }
 
 func FetchIrqs() (*IrqTallies, error) {
@@ -33,37 +52,37 @@ func FetchIrqs() (*IrqTallies, error) {
 		return nil, errors.New(errStr)
 	}
 	lines := strings.Split(string(buff), "\n")
-	// Read each line the buffer, until we fail to convert a column 1 irq number to an int.
+	// Read each line the buffer, until we fail to convert a column 1 (irq number) to an int.
 	for idx, line := range lines {
 		if idx == 0 {
 			// First line is the header, with a column header for each CPU, count them.
-			irqTallies.CpuCount = len(strings.Fields(line))
+			irqTallies.TotalCpuCount = len(strings.Fields(line))
 		} else {
-			if irqTallies.CpuCount < 1 {
+			if irqTallies.TotalCpuCount < 1 {
 				errStr := "Could not detect the number of CPUs"
 				log.Println(errStr)
 				return nil, errors.New(errStr)
 			}
-			var irqTally IrqTally
+			var irqTally IrqsServicedTally
 			splits := strings.Fields(line)
-			if _, err := fmt.Sscanf(splits[0], "%d:", &irqTally.IrqNum); err == nil {
+			if _, err := fmt.Sscanf(splits[0], "%d:", &irqTally.NumericInterruptValue); err == nil {
 				// Parse out the numeric totals for IRQs seen per CPU.
-				for i := 1; i < (irqTallies.CpuCount - 1); i++ {
+				for i := 1; i < (irqTallies.TotalCpuCount - 1); i++ {
 					var irqCnt IrqCount
 					fmt.Sscanf(splits[i], "%d", &irqCnt)
-					irqTally.CpuIrqCounts = append(irqTally.CpuIrqCounts, irqCnt)
+					irqTally.InterruptsServicedByCPU = append(irqTally.InterruptsServicedByCPU, irqCnt)
 				}
-				// Combine the strings following per CPU Irq counts into an IrqSource string
-				for i := irqTallies.CpuCount; i < len(splits); i++ {
-					if len(irqTally.IrqSource) != 0 {
-						irqTally.IrqSource += " "
+				// Combine the strings following per CPU Irq counts into an SourceOfHwInterrupt string
+				for i := irqTallies.TotalCpuCount; i < len(splits); i++ {
+					if len(irqTally.SourceOfHwInterrupt) != 0 {
+						irqTally.SourceOfHwInterrupt += " "
 					}
-					irqTally.IrqSource += strings.TrimSpace(splits[i])
+					irqTally.SourceOfHwInterrupt += strings.TrimSpace(splits[i])
 				}
-				irqTallies.IrqsPerCpu = append(irqTallies.IrqsPerCpu, irqTally)
+				irqTallies.IrqsServicedByCPU = append(irqTallies.IrqsServicedByCPU, irqTally)
 			} else {
 				// How many numbered IRQs did we inventory?
-				irqTallies.IrqCount = len(irqTallies.IrqsPerCpu)
+				irqTallies.TotalNumericIRQs = len(irqTallies.IrqsServicedByCPU)
 				//We've hit a non-numeric (numbered IRQ), bail out of top for/loop.
 				break
 			}
