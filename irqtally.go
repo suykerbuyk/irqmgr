@@ -62,8 +62,8 @@ func calcIrqTalliesDeltas() error {
 	return nil
 }
 
-func ReadIrqCpuAffinity(irq int) string {
-	var path string = "/proc/irq/" + strconv.Itoa(irq) + "/smp_affinity"
+func ReadIrqCpuAffinity(irq uint) string {
+	var path string = "/proc/irq/" + strconv.Itoa(int(irq)) + "/smp_affinity"
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
@@ -101,7 +101,6 @@ func FetchIrqs() (*IrqTallies, error) {
 					var irqCnt IrqCount
 					fmt.Sscanf(splits[i], "%d", &irqCnt)
 					irqTally.InterruptsServicedByCPU = append(irqTally.InterruptsServicedByCPU, irqCnt)
-					irqTally.CpuSmpAffinity = append(irqTally.CpuSmpAffinity, ReadIrqCpuAffinity(i))
 				}
 				// Combine the strings following per CPU Irq counts into an SourceOfHwInterrupt string
 				for i := irqTallies.TotalCpuCount; i < len(splits); i++ {
@@ -111,6 +110,7 @@ func FetchIrqs() (*IrqTallies, error) {
 					irqTally.SourceOfHwInterrupt += strings.TrimSpace(splits[i])
 				}
 				irqTallies.IrqsServicedByCPU = append(irqTallies.IrqsServicedByCPU, irqTally)
+				irqTally.CpuSmpAffinity = append(irqTally.CpuSmpAffinity, ReadIrqCpuAffinity(irqTally.NumericInterruptValue))
 			} else {
 				// How many numbered IRQs did we inventory?
 				irqTallies.TotalNumericIRQs = len(irqTallies.IrqsServicedByCPU)
