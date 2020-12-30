@@ -72,7 +72,13 @@ func ReadIrqCpuAffinity(irq uint) string {
 	ret = strings.Replace(ret, "\n", "", -1)
 	return ret
 }
-
+func SetIrqAffinity(irq, value string) {
+	path := "/proc/irq/" + irq + "/smp_affinity"
+	err := ioutil.WriteFile(path, []byte(value), 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 func FetchIrqs() (*IrqTallies, error) {
 	var irqTallies IrqTallies
 	buff, err := ioutil.ReadFile(pathInterrupts)

@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 type CmdLineOpts struct {
@@ -36,6 +37,16 @@ func usage() {
 	irqmgrFlags.PrintDefaults()
 	os.Exit(0)
 }
+func setIrqAffinity(irq string, affinity string) {
+	var newAffinity string
+	fmt.Println("Set smp_affinity for IRQ:", irq, "currently:", affinity)
+	fmt.Println("Hit enter without entering a value to cancel")
+	fmt.Scanf("%s", &newAffinity)
+	if newAffinity == "" {
+		return
+	}
+	fmt.Println("Setting IRQ:", irq, "to smp_affinity=", newAffinity)
+}
 func main() {
 	if opts.help {
 		usage()
@@ -51,8 +62,13 @@ func main() {
 	}
 	var irqTallies irqmgr.IrqTallies
 	json.Unmarshal(responseData, &irqTallies)
-	loadJsonTree(responseData)
-	fmt.Println("Done")
+	editPath, editValue := loadJsonTree(responseData)
+	if strings.Contains(editPath, "CpuSmpAffinity") {
+		editPath = strings.ReplaceAll(editPath, `["IrqsServicedByCPU"][`, "")
+		editPath = strings.ReplaceAll(editPath, `]["CpuSmpAffinity"]`, "")
+		editValue = strings.ReplaceAll(editValue, `"`, "")
+		setIrqAffinity(editPath, editValue)
+	}
 }
 
 //affinity_hint  effective_affinity  effective_affinity_list  node  smp_affinity  smp_affinity_list  spurious

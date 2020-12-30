@@ -50,7 +50,11 @@ func (vp viewPosition) getCoordinates(maxX, maxY int) (int, int, int, int) {
 	return x0, y0, x1, y1
 }
 
-var helpWindowToggle = false
+var (
+	helpWindowToggle        = false
+	editValue        string = ""
+	editPath         string = ""
+)
 
 var viewPositions = map[string]viewPosition{
 	treeView: {
@@ -75,7 +79,7 @@ var viewPositions = map[string]viewPosition{
 
 var tree treeNode
 
-func loadJsonTree(stream []byte) {
+func loadJsonTree(stream []byte) (string, string) {
 	var err error
 	tree, err = fromBytes(stream)
 	if err != nil {
@@ -87,6 +91,9 @@ func loadJsonTree(stream []byte) {
 	}
 	defer g.Close()
 
+	editPath = ""
+	editValue = ""
+
 	g.SetManagerFunc(layout)
 
 	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
@@ -96,6 +103,9 @@ func loadJsonTree(stream []byte) {
 		log.Panicln(err)
 	}
 	if err := g.SetKeybinding(treeView, 'e', gocui.ModNone, testIt); err != nil {
+		log.Panicln(err)
+	}
+	if err := g.SetKeybinding(textView, 'e', gocui.ModNone, testIt); err != nil {
 		log.Panicln(err)
 	}
 	if err := g.SetKeybinding(treeView, 'k', gocui.ModNone, cursorMovement(-1)); err != nil {
@@ -143,6 +153,7 @@ func loadJsonTree(stream []byte) {
 	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Panicln(err)
 	}
+	return editPath, editValue
 }
 
 const helpMessage = `
@@ -162,6 +173,7 @@ h/?				═ 	Toggle help message
 
 func layout(g *gocui.Gui) error {
 	var views = []string{treeView, textView, pathView}
+	var err error = nil
 	maxX, maxY := g.Size()
 	for _, view := range views {
 		x0, y0, x1, y1 := viewPositions[view].getCoordinates(maxX, maxY)
@@ -202,7 +214,7 @@ func layout(g *gocui.Gui) error {
 	} else {
 		g.DeleteView(helpView)
 	}
-	_, err := g.SetCurrentView(treeView)
+	_, err = g.SetCurrentView(treeView)
 	if err != nil {
 		log.Fatal("failed to set current view: ", err)
 	}
@@ -373,9 +385,21 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
 }
 func testIt(g *gocui.Gui, v *gocui.View) error {
-	tPos := findTreePosition(g)
-	fmt.Println(tPos)
-	fmt.Println(v.Name())
-	//fmt.Println(v.ViewBufferLines())
-	return nil
+	dv, err := g.View(textView)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tv, err := g.View(treeView)
+	if err != nil {
+		log.Fatal(err)
+	}
+	editPath = getPath(g, tv)
+	editValue = dv.Buffer()
+	if strings.Contains(editPath, "CpuSmpAffinity") {
+		return gocui.ErrQuit
+	} else {
+		editPath = ""
+		editValue = ""
+		return nil
+	}
 }
