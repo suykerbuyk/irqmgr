@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"strconv"
 	"strings"
 )
 
@@ -33,6 +34,7 @@ type IrqCpuAffinity struct {
 type IrqsServicedTally struct {
 	NumericInterruptValue   uint       `json:"NumericInterruptValue"`
 	InterruptsServicedByCPU []IrqCount `json:"InterruptsServicedByCPU"`
+	CpuSmpAffinity          []string   `json:"CpuSmpAffinity"`
 	SourceOfHwInterrupt     string     `json:"SourceOfHwInterrupt"`
 }
 type IrqTallies struct {
@@ -58,6 +60,17 @@ func calcIrqTalliesDeltas() error {
 	}
 	// calculate the delta, update the global structs.
 	return nil
+}
+
+func ReadIrqCpuAffinity(irq int) string {
+	var path string = "/proc/irq/" + strconv.Itoa(irq) + "/smp_affinity"
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	ret := string(data[:])
+	ret = strings.Replace(ret, "\n", "", -1)
+	return ret
 }
 
 func FetchIrqs() (*IrqTallies, error) {
@@ -88,6 +101,7 @@ func FetchIrqs() (*IrqTallies, error) {
 					var irqCnt IrqCount
 					fmt.Sscanf(splits[i], "%d", &irqCnt)
 					irqTally.InterruptsServicedByCPU = append(irqTally.InterruptsServicedByCPU, irqCnt)
+					irqTally.CpuSmpAffinity = append(irqTally.CpuSmpAffinity, ReadIrqCpuAffinity(i))
 				}
 				// Combine the strings following per CPU Irq counts into an SourceOfHwInterrupt string
 				for i := irqTallies.TotalCpuCount; i < len(splits); i++ {
