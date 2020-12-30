@@ -31,6 +31,12 @@ type IrqCpuAffinity struct {
 	/* To be researched */
 	EffectiveAffinityList string `json:"EffectiveAffinityList"`
 }
+
+type SetSmpAffinityData struct {
+	Irq      string `json:"Irq"`
+	Affinity string `json:"Affinity"`
+}
+
 type IrqsServicedTally struct {
 	NumericInterruptValue   uint       `json:"NumericInterruptValue"`
 	InterruptsServicedByCPU []IrqCount `json:"InterruptsServicedByCPU"`
@@ -74,6 +80,7 @@ func ReadIrqCpuAffinity(irq uint) string {
 }
 func SetIrqAffinity(irq, value string) {
 	path := "/proc/irq/" + irq + "/smp_affinity"
+	//path := irq + "_smp_affinity.test"
 	err := ioutil.WriteFile(path, []byte(value), 0)
 	if err != nil {
 		log.Fatal(err)

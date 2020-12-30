@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	flag "github.com/spf13/pflag"
@@ -37,21 +38,22 @@ func usage() {
 	irqmgrFlags.PrintDefaults()
 	os.Exit(0)
 }
-func setIrqAffinity(irq string, affinity string) {
+func getNewIrqAffinitySetting(irq string, affinity string) string {
 	var newAffinity string
 	fmt.Println("Set smp_affinity for IRQ:", irq, "currently:", affinity)
 	fmt.Println("Hit enter without entering a value to cancel")
 	fmt.Scanf("%s", &newAffinity)
 	if newAffinity == "" {
-		return
+		return ""
 	}
-	fmt.Println("Setting IRQ:", irq, "to smp_affinity=", newAffinity)
+	return newAffinity
 }
 func main() {
 	if opts.help {
 		usage()
 	}
 	jsonGetURI := opts.server + "/all"
+	jsonSetURI := opts.server + "/set"
 	response, err := http.Get(jsonGetURI)
 	if err != nil {
 		log.Fatal(err)
@@ -67,7 +69,24 @@ func main() {
 		editPath = strings.ReplaceAll(editPath, `["IrqsServicedByCPU"][`, "")
 		editPath = strings.ReplaceAll(editPath, `]["CpuSmpAffinity"]`, "")
 		editValue = strings.ReplaceAll(editValue, `"`, "")
-		setIrqAffinity(editPath, editValue)
+		editValue := getNewIrqAffinitySetting(editPath, editValue)
+		if editValue != "" {
+			var setting irqmgr.SetSmpAffinityData
+			setting.Irq = editPath
+			setting.Affinity = editValue
+			jsonReq, err := json.Marshal(setting)
+			if err != nil {
+				log.Fatal(err)
+			}
+			resp, err := http.Post(jsonSetURI, "application/json; charset=utf-8", bytes.NewBuffer(jsonReq))
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer resp.Body.Close()
+			bodyBytes, _ := ioutil.ReadAll(resp.Body)
+			bodyString := string(bodyBytes)
+			fmt.Println(bodyString)
+		}
 	}
 }
 

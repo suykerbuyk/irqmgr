@@ -29,6 +29,15 @@ func serveAllIrqTallies(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(irqTallies)
 }
+func setIrqAffinity(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Endpoint Hit: setIrqAffinity")
+	var affinityReq irqmgr.SetSmpAffinityData
+	err := json.NewDecoder(r.Body).Decode(&affinityReq)
+	if err != nil {
+		log.Fatal(err)
+	}
+	irqmgr.SetIrqAffinity(affinityReq.Irq, affinityReq.Affinity)
+}
 
 func serveJustIrqTallies(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Endpoint Hit: serveIrqTallies")
@@ -45,6 +54,7 @@ func handleRequest() {
 	irqMgrRouter.HandleFunc("/", homePage)
 	irqMgrRouter.HandleFunc("/all", serveAllIrqTallies)
 	irqMgrRouter.HandleFunc("/just", serveJustIrqTallies)
+	irqMgrRouter.HandleFunc("/set", setIrqAffinity).Methods("POST")
 	log.Fatal(http.ListenAndServe(":10000", irqMgrRouter))
 }
 
