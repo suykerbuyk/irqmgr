@@ -1,12 +1,10 @@
 package irqmgr
 
 import (
-	//	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
-	//	"os"
 	"strings"
 )
 
