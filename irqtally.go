@@ -34,7 +34,7 @@ type IrqCpuAffinity struct {
 type IrqsServicedTally struct {
 	NumericInterruptValue   uint       `json:"NumericInterruptValue"`
 	InterruptsServicedByCPU []IrqCount `json:"InterruptsServicedByCPU"`
-	CpuSmpAffinity          []string   `json:"CpuSmpAffinity"`
+	CpuSmpAffinity          string     `json:"CpuSmpAffinity"`
 	SourceOfHwInterrupt     string     `json:"SourceOfHwInterrupt"`
 }
 type IrqTallies struct {
@@ -102,6 +102,7 @@ func FetchIrqs() (*IrqTallies, error) {
 					fmt.Sscanf(splits[i], "%d", &irqCnt)
 					irqTally.InterruptsServicedByCPU = append(irqTally.InterruptsServicedByCPU, irqCnt)
 				}
+				irqTally.CpuSmpAffinity = ReadIrqCpuAffinity(irqTally.NumericInterruptValue)
 				// Combine the strings following per CPU Irq counts into an SourceOfHwInterrupt string
 				for i := irqTallies.TotalCpuCount; i < len(splits); i++ {
 					if len(irqTally.SourceOfHwInterrupt) != 0 {
@@ -110,7 +111,6 @@ func FetchIrqs() (*IrqTallies, error) {
 					irqTally.SourceOfHwInterrupt += strings.TrimSpace(splits[i])
 				}
 				irqTallies.IrqsServicedByCPU = append(irqTallies.IrqsServicedByCPU, irqTally)
-				irqTally.CpuSmpAffinity = append(irqTally.CpuSmpAffinity, ReadIrqCpuAffinity(irqTally.NumericInterruptValue))
 			} else {
 				// How many numbered IRQs did we inventory?
 				irqTallies.TotalNumericIRQs = len(irqTallies.IrqsServicedByCPU)
