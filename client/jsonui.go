@@ -95,7 +95,7 @@ func loadJsonTree(stream []byte) {
 	if err := g.SetKeybinding("", 'q', gocui.ModNone, quit); err != nil {
 		log.Panicln(err)
 	}
-	if err := g.SetKeybinding(treeView, 'z', gocui.ModNone, testIt); err != nil {
+	if err := g.SetKeybinding(treeView, 'e', gocui.ModNone, testIt); err != nil {
 		log.Panicln(err)
 	}
 	if err := g.SetKeybinding(treeView, 'k', gocui.ModNone, cursorMovement(-1)); err != nil {
@@ -122,10 +122,10 @@ func loadJsonTree(stream []byte) {
 	if err := g.SetKeybinding(treeView, gocui.KeyPgdn, gocui.ModNone, cursorMovement(15)); err != nil {
 		log.Panicln(err)
 	}
-	if err := g.SetKeybinding(treeView, 'e', gocui.ModNone, toggleExpand); err != nil {
+	if err := g.SetKeybinding(treeView, 'z', gocui.ModNone, toggleExpand); err != nil {
 		log.Panicln(err)
 	}
-	if err := g.SetKeybinding(treeView, 'E', gocui.ModNone, expandAll); err != nil {
+	if err := g.SetKeybinding(treeView, 'Z', gocui.ModNone, expandAll); err != nil {
 		log.Panicln(err)
 	}
 	if err := g.SetKeybinding(treeView, 'C', gocui.ModNone, collapseAll); err != nil {
@@ -152,8 +152,9 @@ j/ArrowDown		═ 	Move a line down
 k/ArrowUp 		═ 	Move a line up
 J/PageDown		═ 	Move 15 line down
 K/PageUp 		═ 	Move 15 line up
-e				═ 	Toggle expend/collapse node
-E				═ 	Expand all nodes
+e				═ 	Edit cpu_affinity
+z				═ 	Toggle expend/collapse node
+Z				═ 	Expand all nodes
 C				═ 	Collapse all nodes
 q/ctrl+c		═ 	Exit
 h/?				═ 	Toggle help message
@@ -374,5 +375,7 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 func testIt(g *gocui.Gui, v *gocui.View) error {
 	tPos := findTreePosition(g)
 	fmt.Println(tPos)
+	fmt.Println(v.Name())
+	//fmt.Println(v.ViewBufferLines())
 	return nil
 }

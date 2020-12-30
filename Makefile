@@ -9,4 +9,4 @@ build_client:
 	go build -o bin/irqmgr_client client/irqMgrClient.go client/jsonui.go client/tree.go
 
 clean:
-	rm bin/*
+	rm bin/* 2>/dev/null | true
