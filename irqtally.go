@@ -79,9 +79,10 @@ func ReadIrqCpuAffinity(irq uint) string {
 	return ret
 }
 func SetIrqAffinity(irq, value string) {
-	path := "/proc/irq/" + irq + "/smp_affinity"
-	//path := irq + "_smp_affinity.test"
-	err := ioutil.WriteFile(path, []byte(value), 0)
+	//path := "/proc/irq/" + irq + "/smp_affinity"
+	//err := ioutil.WriteFile(path, []byte(value), 0)
+	path := irq + "_smp_affinity.test"
+	err := ioutil.WriteFile(path, []byte(value), 438)
 	if err != nil {
 		log.Fatal(err)
 	}
